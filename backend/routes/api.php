@@ -2,15 +2,16 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PlatsController;
 use App\Http\Controllers\CommandeController;
-use APP\Http\Controllers\PaiementController;
-use APP\Http\Controllers\StockController;
+use App\Http\Controllers\PaiementController;
+use App\Http\Controllers\StockController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\OnlineOrderController;
+use App\Http\Controllers\OnlineCommandeController;
 use App\Http\Controllers\DashboardController;
 
 /*
@@ -28,6 +29,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
 Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
 Route::post('/password/reset', [AuthController::class, 'resetPassword']);
 
@@ -46,6 +48,27 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('/test', function() {
     return response()->json(['message' => 'API fonctionne !']);
+});
+
+Route::get('/test-db-driver', function () {
+    $info = [
+        'php_version' => PHP_VERSION,
+        'pdo_mysql_loaded' => extension_loaded('pdo_mysql'),
+        'pdo_drivers' => PDO::getAvailableDrivers(),
+        'php_ini' => php_ini_loaded_file(),
+    ];
+
+    try {
+        DB::connection()->getPdo();
+        $info['connection'] = 'success';
+        $info['database'] = DB::connection()->getDatabaseName();
+    } catch (\Exception $e) {
+        $info['connection'] = 'failed';
+        $info['error'] = $e->getMessage();
+        $info['error_code'] = $e->getCode();
+    }
+
+    return response()->json($info, 200, [], JSON_PRETTY_PRINT);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -106,10 +129,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/stocks/movements', [StockController::class, 'movements']);
 });
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/menu', [OnlineOrderController::class, 'menu']);
-    Route::post('/cart/add', [OnlineOrderController::class, 'addToCart']);
-    Route::post('/cart/checkout', [OnlineOrderController::class, 'checkout']);
-    Route::get('/cart/status/{order_id}', [OnlineOrderController::class, 'status']);
+    Route::get('/menu', [OnlineCommandeController::class, 'menu']);
+    Route::post('/cart/add', [OnlineCommandeController::class, 'addToCart']);
+    Route::post('/cart/checkout', [OnlineCommandeController::class, 'checkout']);
+    Route::get('/cart/status/{order_id}', [OnlineCommandeController::class, 'status']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {

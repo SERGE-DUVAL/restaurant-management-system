@@ -4,12 +4,86 @@ import React, { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 
 const MOCK_MENU = [
-  { id: 1, name: "Le Homard Bleu Royal", category: "plats", price: 125, desc: "Bisque de homard, caviar Osciètre, émulsion au Champagne.", img: "https://images.unsplash.com/photo-1559737558-2f5a35f4523b?auto=format&fit=crop&w=800&q=80" },
-  { id: 2, name: "Le Bœuf Wagyu", category: "plats", price: 180, desc: "Filet mignon grillé, jus truffé, légumes racines glacés.", img: "https://images.unsplash.com/photo-1546964124-0cce460f38ef?auto=format&fit=crop&w=800&q=80" },
-  { id: 3, name: "Le Foie Gras de Canard", category: "entrees", price: 48, desc: "Mi-cuit, toast brioché aux noisettes, compotée de figues violets.", img: "https://images.unsplash.com/photo-1600891964092-4316c288032e?auto=format&fit=crop&w=800&q=80" },
-  { id: 4, name: "Saint-Jacques Rôties", category: "entrees", price: 55, desc: "Beurre fermier, sauce vin blanc, cresson de fontaine.", img: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=800&q=80" },
-  { id: 5, name: "L'Exposition Chocolat", category: "desserts", price: 28, desc: "Ganache 70%, praliné noisette, éclats de caramel beurre salé.", img: "https://images.unsplash.com/photo-1571875257727-256c39da42af?auto=format&fit=crop&w=800&q=80" },
-  { id: 6, name: "Soufflé au Grand Marnier", category: "desserts", price: 24, desc: "Flambé à table, accompagné de sa glace vanille de Madagascar.", img: "https://images.unsplash.com/photo-1541783245831-57d6fb0926d3?auto=format&fit=crop&w=800&q=80" },
+  {
+    id: 1,
+    name: "Le Homard Bleu Royal",
+    category: "plats",
+    price: 125,
+    desc: "Bisque de homard, caviar Osciètre, émulsion au Champagne.",
+    img: "https://images.unsplash.com/photo-1559737558-2f5a35f4523b?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 2,
+    name: "Le Bœuf Wagyu",
+    category: "plats",
+    price: 180,
+    desc: "Filet mignon grillé, jus truffé, légumes racines glacés.",
+    img: "https://images.unsplash.com/photo-1546964124-0cce460f38ef?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 3,
+    name: "Le Foie Gras de Canard",
+    category: "entrees",
+    price: 48,
+    desc: "Mi-cuit, toast brioché aux noisettes, compotée de figues violets.",
+    img: "https://images.unsplash.com/photo-1600891964092-4316c288032e?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 4,
+    name: "Saint-Jacques Rôties",
+    category: "entrees",
+    price: 55,
+    desc: "Beurre fermier, sauce vin blanc, cresson de fontaine.",
+    img: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 5,
+    name: "L'Exposition Chocolat",
+    category: "desserts",
+    price: 28,
+    desc: "Ganache 70%, praliné noisette, éclats de caramel beurre salé.",
+    img: "/L'Exposition Chocolat.jpg",
+  },
+  {
+    id: 6,
+    name: "Soufflé au Grand Marnier",
+    category: "desserts",
+    price: 24,
+    desc: "Flambé à table, accompagné de sa glace vanille de Madagascar.",
+    img: "https://images.unsplash.com/photo-1541783245831-57d6fb0926d3?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 7,
+    name: "Tartare de Saumon Royal",
+    category: "entrees",
+    price: 39,
+    desc: "Saumon mariné aux agrumes, avocat crémeux, perles de citron.",
+    img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 8,
+    name: "Risotto aux Morilles",
+    category: "plats",
+    price: 72,
+    desc: "Arborio crémeux, morilles fraîches, copeaux de parmesan affiné.",
+    img: "https://images.unsplash.com/photo-1543353071-873f17a7a088?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 9,
+    name: "Saint-Honoré Vanille-Caramel",
+    category: "desserts",
+    price: 26,
+    desc: "Pâte feuilletée caramélisée, choux vanille, chantilly légère.",
+    img: "https://images.unsplash.com/photo-1478145046317-39f10e56b5e9?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 10,
+    name: "Œuf Parfait Truffe Noire",
+    category: "entrees",
+    price: 44,
+    desc: "Œuf fermier à 63°, mousseline de pommes de terre, brisures de truffe.",
+    img: "https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?auto=format&fit=crop&w=800&q=80",
+  },
 ];
 
 const MenuPage: React.FC = () => {
@@ -58,7 +132,9 @@ const MenuPage: React.FC = () => {
             className={`card ${visible ? 'fade-in' : ''}`}
             style={{ animationDelay: `${index * 0.1}s` }}
           >
-            <img src={item.img} alt={item.name} className="card-img" />
+            {item.img && (
+              <img src={item.img} alt={item.name} className="card-img" />
+            )}
             <div className="card-body">
               <h3 className="card-title">{item.name}</h3>
               <p className="card-price">{item.price} €</p>

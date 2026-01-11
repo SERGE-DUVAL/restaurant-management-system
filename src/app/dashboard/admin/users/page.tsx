@@ -1,33 +1,74 @@
 'use client';
 
+import React, { useEffect, useState } from 'react';
 import VerticalDashboard from '@/components/VerticalDashboard';
 import RoleProtectedLayout from '@/components/RoleProtectedLayout';
 import ManagementPageLayout from '@/components/ManagementPageLayout';
+import { userService, User } from '@/services/userService';
+import { useNotification } from '@/contexts/NotificationContext';
 
 const getRoleBadge = (role: string) => {
   const roleColors: { [key: string]: string } = {
-    Admin: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-    Réception: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-    Chef: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-    Caissier: 'bg-green-500/20 text-green-300 border-green-500/30',
-    Livreur: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+    admin: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+    reception: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    chef: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+    caissier: 'bg-green-500/20 text-green-300 border-green-500/30',
+    livreur: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+    client: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
   };
-  return roleColors[role] || 'bg-gray-500/20 text-gray-300 border-gray-500/30';
+  return roleColors[role.toLowerCase()] || 'bg-gray-500/20 text-gray-300 border-gray-500/30';
 };
 
-const getStatusBadge = (status: string) => {
-  return status === 'Actif'
-    ? 'bg-green-500/20 text-green-300 border-green-500/30'
-    : 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+const formatRole = (role: string) => {
+  const roleMap: { [key: string]: string } = {
+    'admin': 'Admin',
+    'reception': 'Réception',
+    'chef': 'Chef',
+    'caissier': 'Caissier',
+    'livreur': 'Livreur',
+    'client': 'Client',
+  };
+  return roleMap[role.toLowerCase()] || role;
 };
 
 export default function UsersManagementPage() {
-  const users = [
-    { id: 1, name: 'Jean Dupont', email: 'jean.dupont@email.com', role: 'Admin', status: 'Actif', date: '2025-01-15' },
-    { id: 2, name: 'Marie Curie', email: 'marie.curie@email.com', role: 'Réception', status: 'Actif', date: '2025-02-20' },
-    { id: 3, name: 'Pierre Martin', email: 'pierre.martin@email.com', role: 'Chef', status: 'Actif', date: '2025-03-10' },
-    { id: 4, name: 'Sophie Laurent', email: 'sophie.laurent@email.com', role: 'Caissier', status: 'Inactif', date: '2025-04-05' },
-  ];
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { showNotification } = useNotification();
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const data = await userService.getAll();
+      setUsers(data);
+    } catch (error: any) {
+      console.error('Error loading users:', error);
+      showNotification('error', 'Erreur', 'Impossible de charger les utilisateurs');
+      // Utiliser des données mock en cas d'erreur
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+      return;
+    }
+
+    try {
+      await userService.delete(id);
+      showNotification('success', 'Succès', 'Utilisateur supprimé avec succès');
+      loadUsers();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      showNotification('error', 'Erreur', 'Impossible de supprimer l\'utilisateur');
+    }
+  };
 
   return (
     <RoleProtectedLayout allowedRoles={['admin']}>
@@ -66,40 +107,55 @@ export default function UsersManagementPage() {
                       <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Nom</th>
                       <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Email</th>
                       <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Rôle</th>
-                      <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Statut</th>
-                      <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Date d'inscription</th>
+                      <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Téléphone</th>
+                      <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Date</th>
                       <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[--color-accent]/10">
-                    {users.map((user) => (
-                      <tr key={user.id} className="hover:bg-[--color-accent]/5 transition-all duration-200 group">
-                        <td className="py-4 px-6 text-sm text-[--color-text] group-hover:text-[--color-accent] transition-colors font-medium">{user.name}</td>
-                        <td className="py-4 px-6 text-sm text-[--color-text-muted] group-hover:text-[--color-text] transition-colors">{user.email}</td>
-                        <td className="py-4 px-6">
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getRoleBadge(user.role)}`}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(user.status)}`}>
-                            {user.status}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 text-sm text-[--color-text-muted]">{user.date}</td>
-                        <td className="py-4 px-6">
-                          <div className="flex gap-2">
-                            <button className="text-[--color-accent] hover:text-[--color-accent-hover] transition-colors font-medium text-sm">
-                              Modifier
-                            </button>
-                            <span className="text-[--color-text-muted]">|</span>
-                            <button className="text-red-400 hover:text-red-300 transition-colors font-medium text-sm">
-                              Supprimer
-                            </button>
-                          </div>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-[--color-text-muted]">
+                          Chargement des utilisateurs...
                         </td>
                       </tr>
-                    ))}
+                    ) : users.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-[--color-text-muted]">
+                          Aucun utilisateur trouvé
+                        </td>
+                      </tr>
+                    ) : (
+                      users.map((user) => (
+                        <tr key={user.id} className="hover:bg-[--color-accent]/5 transition-all duration-200 group">
+                          <td className="py-4 px-6 text-sm text-[--color-text] group-hover:text-[--color-accent] transition-colors font-medium">
+                            {user.prenom} {user.nom}
+                          </td>
+                          <td className="py-4 px-6 text-sm text-[--color-text-muted] group-hover:text-[--color-text] transition-colors">{user.email}</td>
+                          <td className="py-4 px-6">
+                            <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getRoleBadge(user.role)}`}>
+                              {formatRole(user.role)}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6 text-sm text-[--color-text-muted]">{user.telephone || '-'}</td>
+                          <td className="py-4 px-6 text-sm text-[--color-text-muted]">-</td>
+                          <td className="py-4 px-6">
+                            <div className="flex gap-2">
+                              <button className="text-[--color-accent] hover:text-[--color-accent-hover] transition-colors font-medium text-sm">
+                                Modifier
+                              </button>
+                              <span className="text-[--color-text-muted]">|</span>
+                              <button 
+                                onClick={() => handleDelete(user.id)}
+                                className="text-red-400 hover:text-red-300 transition-colors font-medium text-sm"
+                              >
+                                Supprimer
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

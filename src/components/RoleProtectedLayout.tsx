@@ -15,27 +15,21 @@ const RoleProtectedLayout: React.FC<RoleProtectedLayoutProps> = ({
   allowedRoles, 
   fallback = <div>Accès refusé</div> 
 }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Attendre un peu pour que l'utilisateur soit chargé depuis localStorage
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 200);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!loading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, loading, router]);
 
-  if (isLoading) {
-    return null; // Afficher rien pendant le chargement
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-[--color-text-muted]">Chargement...</div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {

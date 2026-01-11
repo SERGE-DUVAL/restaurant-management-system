@@ -55,3 +55,5 @@ const ModernTable: React.FC<ModernTableProps> = ({ columns, data }) => {
 
 export default ModernTable;
 
+
+

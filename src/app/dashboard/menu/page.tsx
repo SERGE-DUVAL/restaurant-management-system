@@ -1,8 +1,11 @@
 "use client";
 
+import React, { useEffect, useState } from 'react';
 import VerticalDashboard from '@/components/VerticalDashboard';
 import RoleProtectedLayout from '@/components/RoleProtectedLayout';
 import ManagementPageLayout from '@/components/ManagementPageLayout';
+import { dishService, Dish } from '@/services/dishService';
+import { useNotification } from '@/contexts/NotificationContext';
 
 const getCategoryBadge = (category: string) => {
   const categoryColors: { [key: string]: string } = {
@@ -21,12 +24,42 @@ const getAvailabilityBadge = (available: boolean) => {
 };
 
 export default function MenuPage() {
-  const menuItems = [
-    { plat: 'Salade César', category: 'Entrée', price: '€12.50', available: true, ingredients: 'Laitue, poulet, parmesan, croûtons', calories: '320 kcal' },
-    { plat: 'Filet de bœuf grillé', category: 'Plat principal', price: '€24.90', available: true, ingredients: 'Bœuf, pommes de terre, légumes grillés', calories: '580 kcal' },
-    { plat: 'Tiramisu maison', category: 'Dessert', price: '€8.50', available: false, ingredients: 'Mascarpone, café, biscuits, cacao', calories: '420 kcal' },
-    { plat: 'Bouteille de vin rouge', category: 'Boisson', price: '€28.00', available: true, ingredients: 'Vin de Bordeaux, 75cl', calories: '85 kcal/verre' },
-  ];
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { showNotification } = useNotification();
+
+  useEffect(() => {
+    loadDishes();
+  }, []);
+
+  const loadDishes = async () => {
+    try {
+      setLoading(true);
+      const data = await dishService.getAll();
+      setDishes(data);
+    } catch (error: any) {
+      console.error('Error loading dishes:', error);
+      showNotification('error', 'Erreur', 'Impossible de charger le menu');
+      setDishes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce plat ?')) {
+      return;
+    }
+
+    try {
+      await dishService.delete(id);
+      showNotification('success', 'Succès', 'Plat supprimé avec succès');
+      loadDishes();
+    } catch (error: any) {
+      console.error('Error deleting dish:', error);
+      showNotification('error', 'Erreur', 'Impossible de supprimer le plat');
+    }
+  };
 
   return (
       <RoleProtectedLayout allowedRoles={['admin', 'chef']}>
@@ -66,40 +99,57 @@ export default function MenuPage() {
                     <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Prix</th>
                     <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Disponibilité</th>
                     <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Ingrédients</th>
-                    <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Calories</th>
+                    <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Info</th>
                     <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-accent]/10">
-                  {menuItems.map((item, index) => (
-                    <tr key={index} className="hover:bg-[--color-accent]/5 transition-all duration-200 group">
-                      <td className="py-4 px-6 text-sm text-[--color-text] group-hover:text-[--color-accent] transition-colors font-medium">{item.plat}</td>
-                      <td className="py-4 px-6">
-                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getCategoryBadge(item.category)}`}>
-                          {item.category}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 text-sm text-[--color-text] font-semibold">{item.price}</td>
-                      <td className="py-4 px-6">
-                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getAvailabilityBadge(item.available)}`}>
-                          {item.available ? 'Disponible' : 'Indisponible'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 text-sm text-[--color-text-muted]">{item.ingredients}</td>
-                      <td className="py-4 px-6 text-sm text-[--color-text-muted]">{item.calories}</td>
-                      <td className="py-4 px-6">
-                        <div className="flex gap-2">
-                          <button className="text-[--color-accent] hover:text-[--color-accent-hover] transition-colors font-medium text-sm">
-                            Modifier
-                          </button>
-                          <span className="text-[--color-text-muted]">|</span>
-                          <button className="text-red-400 hover:text-red-300 transition-colors font-medium text-sm">
-                            Supprimer
-                </button>
-              </div>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-[--color-text-muted]">
+                        Chargement du menu...
                       </td>
                     </tr>
-                  ))}
+                  ) : dishes.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-[--color-text-muted]">
+                        Aucun plat trouvé
+                      </td>
+                    </tr>
+                  ) : (
+                    dishes.map((dish) => (
+                      <tr key={dish.id} className="hover:bg-[--color-accent]/5 transition-all duration-200 group">
+                        <td className="py-4 px-6 text-sm text-[--color-text] group-hover:text-[--color-accent] transition-colors font-medium">{dish.nom}</td>
+                        <td className="py-4 px-6">
+                          <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getCategoryBadge(dish.category?.nom || 'Autre')}`}>
+                            {dish.category?.nom || 'Sans catégorie'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-sm text-[--color-text] font-semibold">€{dish.prix.toFixed(2)}</td>
+                        <td className="py-4 px-6">
+                          <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getAvailabilityBadge(dish.disponible)}`}>
+                            {dish.disponible ? 'Disponible' : 'Indisponible'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-sm text-[--color-text-muted]">{dish.description || '-'}</td>
+                        <td className="py-4 px-6 text-sm text-[--color-text-muted]">-</td>
+                        <td className="py-4 px-6">
+                          <div className="flex gap-2">
+                            <button className="text-[--color-accent] hover:text-[--color-accent-hover] transition-colors font-medium text-sm">
+                              Modifier
+                            </button>
+                            <span className="text-[--color-text-muted]">|</span>
+                            <button 
+                              onClick={() => handleDelete(dish.id)}
+                              className="text-red-400 hover:text-red-300 transition-colors font-medium text-sm"
+                            >
+                              Supprimer
+                </button>
+              </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

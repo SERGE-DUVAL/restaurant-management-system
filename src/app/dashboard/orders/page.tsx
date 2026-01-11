@@ -1,27 +1,64 @@
 "use client";
 
+import React, { useEffect, useState } from 'react';
 import VerticalDashboard from '@/components/VerticalDashboard';
 import RoleProtectedLayout from '@/components/RoleProtectedLayout';
 import ManagementPageLayout from '@/components/ManagementPageLayout';
+import { orderService, Order } from '@/services/orderService';
+import { useNotification } from '@/contexts/NotificationContext';
 
 const getStatusBadge = (status: string) => {
   const statusColors: { [key: string]: string } = {
-    'Livrée': 'bg-green-500/20 text-green-300 border-green-500/30',
-    'En préparation': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-    'En livraison': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-    'Prêt': 'bg-green-500/20 text-green-300 border-green-500/30',
-    'Annulée': 'bg-red-500/20 text-red-300 border-red-500/30',
+    'payee': 'bg-green-500/20 text-green-300 border-green-500/30',
+    'en_attente': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+    'annulee': 'bg-red-500/20 text-red-300 border-red-500/30',
   };
   return statusColors[status] || 'bg-gray-500/20 text-gray-300 border-gray-500/30';
 };
 
+const formatStatus = (status: string) => {
+  const statusMap: { [key: string]: string } = {
+    'payee': 'Payée',
+    'en_attente': 'En attente',
+    'annulee': 'Annulée',
+  };
+  return statusMap[status] || status;
+};
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('fr-FR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 export default function OrdersPage() {
-  const orders = [
-    { id: 'CMD-001', client: 'Jean Dupont', date: '2025-01-15 19:30', status: 'En préparation', amount: '€45.50', type: 'À emporter' },
-    { id: 'CMD-002', client: 'Marie Curie', date: '2025-01-15 20:15', status: 'Prêt', amount: '€32.00', type: 'Sur place' },
-    { id: 'CMD-003', client: 'Pierre Martin', date: '2025-01-15 12:45', status: 'En livraison', amount: '€56.80', type: 'Livraison' },
-    { id: 'CMD-004', client: 'Sophie Laurent', date: '2025-01-14 18:20', status: 'Livrée', amount: '€28.50', type: 'Sur place' },
-  ];
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { showNotification } = useNotification();
+
+  useEffect(() => {
+    loadOrders();
+  }, []);
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      const data = await orderService.getAll();
+      setOrders(data);
+    } catch (error: any) {
+      console.error('Error loading orders:', error);
+      showNotification('error', 'Erreur', 'Impossible de charger les commandes');
+      // Utiliser des données mock en cas d'erreur
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <RoleProtectedLayout allowedRoles={['admin', 'reception', 'cashier', 'chef', 'delivery']}>
@@ -59,36 +96,54 @@ export default function OrdersPage() {
                     <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Date</th>
                     <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Statut</th>
                     <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Montant</th>
-                    <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Type</th>
+                    <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Plats</th>
                     <th className="py-4 px-6 text-left text-sm font-semibold text-[--color-accent] uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-accent]/10">
-                  {orders.map((order) => (
-                    <tr key={order.id} className="hover:bg-[--color-accent]/5 transition-all duration-200 group">
-                      <td className="py-4 px-6 text-sm text-[--color-accent] group-hover:text-[--color-accent-hover] transition-colors font-semibold">#{order.id}</td>
-                      <td className="py-4 px-6 text-sm text-[--color-text] group-hover:text-[--color-accent] transition-colors font-medium">{order.client}</td>
-                      <td className="py-4 px-6 text-sm text-[--color-text-muted]">{order.date}</td>
-                      <td className="py-4 px-6">
-                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(order.status)}`}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 text-sm text-[--color-text] font-semibold">{order.amount}</td>
-                      <td className="py-4 px-6 text-sm text-[--color-text-muted]">{order.type}</td>
-                      <td className="py-4 px-6">
-                        <div className="flex gap-2">
-                          <button className="text-[--color-accent] hover:text-[--color-accent-hover] transition-colors font-medium text-sm">
-                            Détails
-                          </button>
-                          <span className="text-[--color-text-muted]">|</span>
-                          <button className="text-blue-400 hover:text-blue-300 transition-colors font-medium text-sm">
-                            Modifier
-                          </button>
-                        </div>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-[--color-text-muted]">
+                        Chargement des commandes...
                       </td>
                     </tr>
-                  ))}
+                  ) : orders.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-[--color-text-muted]">
+                        Aucune commande trouvée
+                      </td>
+                    </tr>
+                  ) : (
+                    orders.map((order) => (
+                      <tr key={order.id} className="hover:bg-[--color-accent]/5 transition-all duration-200 group">
+                        <td className="py-4 px-6 text-sm text-[--color-accent] group-hover:text-[--color-accent-hover] transition-colors font-semibold">#{order.id}</td>
+                        <td className="py-4 px-6 text-sm text-[--color-text] group-hover:text-[--color-accent] transition-colors font-medium">
+                          {order.clients ? `${order.clients.prenom} ${order.clients.nom}` : 'Client inconnu'}
+                        </td>
+                        <td className="py-4 px-6 text-sm text-[--color-text-muted]">{formatDate(order.created_at)}</td>
+                        <td className="py-4 px-6">
+                          <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(order.statut)}`}>
+                            {formatStatus(order.statut)}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-sm text-[--color-text] font-semibold">€{order.total.toFixed(2)}</td>
+                        <td className="py-4 px-6 text-sm text-[--color-text-muted]">
+                          {order.plats ? `${order.plats.length} plat(s)` : '0 plat'}
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="flex gap-2">
+                            <button className="text-[--color-accent] hover:text-[--color-accent-hover] transition-colors font-medium text-sm">
+                              Détails
+                            </button>
+                            <span className="text-[--color-text-muted]">|</span>
+                            <button className="text-blue-400 hover:text-blue-300 transition-colors font-medium text-sm">
+                              Modifier
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
